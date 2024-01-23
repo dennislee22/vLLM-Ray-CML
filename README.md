@@ -51,7 +51,6 @@ Throughput: 0.98 requests/s, 446.75 tokens/s
 Processed prompts: 100%|██████████████████████| 100/100 [02:49<00:00,  1.70s/it]
 Throughput: 0.59 requests/s, 268.08 tokens/s
 ```
-<img width="1013" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/256f28e6-d969-4616-ae5d-b46bc93c2faf">
 
 <img width="1432" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/752791a1-8701-4622-af66-a6648d6544e4">
 
