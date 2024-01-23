@@ -10,6 +10,34 @@ pip install ray[default]
 ```
 
 ```
+cdsw@m4u3p7qm2255m2by:~$ ray status --address 10.254.19.61:6379
+======== Autoscaler status: 2024-01-23 13:19:25.607925 ========
+Node status
+---------------------------------------------------------------
+Active:
+ 1 node_10f59d8ac46718137bd6799700ae25f15f7697a7412b5c4cc973fcf4
+ 1 node_20ef3cf77c59cb49bc2498c5bc3ca7ee953e3cb3add5f8243ddaeb69
+ 1 node_57c8c66234368fbc1ac5138aeba6e9152cfa6766802b05b8bb3490c0
+ 1 node_c5994a87133d5b1ee9f574902f4d07f162cac49183243e6cc77ddb51
+Pending:
+ (no pending nodes)
+Recent failures:
+ (no failures)
+
+Resources
+---------------------------------------------------------------
+Usage:
+ 0.0/160.0 CPU
+ 0.0/4.0 GPU
+ 0B/47.58GiB memory
+ 0B/21.61GiB object_store_memory
+
+Demands:
+ (no resource demands)
+```
+
+
+```
 pip install -U protobuf
 ```
 
