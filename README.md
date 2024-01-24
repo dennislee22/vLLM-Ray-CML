@@ -9,6 +9,14 @@ nvitop
 pip install ray[default]
 ```
 
+```
+pip install -U protobuf flask markupsafe jinja2
+```
+
+```
+git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
+```
+
 python -m vllm.entrypoints.openai.api_server --tensor-parallel-size=1 --served-model-name="vicuna-13b-v1.3" --model="vicuna-13b-v1.3" --port=8090 --host="0.0.0.0" > output.log 2>&1 &
 
 ```
@@ -39,13 +47,6 @@ Demands:
 ```
 
 
-```
-pip install -U protobuf
-```
-
-```
-git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
-```
 
 
 <img width="985" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/01364d62-d27f-4d94-ae13-e65e375ef1e8">
