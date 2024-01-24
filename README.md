@@ -1,8 +1,11 @@
 # vLLM-rayServe
 
-<img width="983" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7dbe7530-4987-475d-a955-e9f819b6026f">
+<img width="814" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/6a03d5bb-570c-44d8-8bad-55269905962c">
+
 
 - Python3.10
+
+<img width="1411" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/006ddc97-fbc8-4c92-a9b8-076c51b4c8ee">
 
 ```
 vllm
@@ -17,6 +20,10 @@ pip install -U protobuf flask markupsafe jinja2
 ```
 git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 ```
+
+<img width="1328" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/11578915-b958-4d61-9dd9-24f7f7f3d9af">
+
+<img width="485" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7fbec7af-c1bd-4af5-bc70-435fb0b12220">
 
 python -m vllm.entrypoints.openai.api_server --tensor-parallel-size=1 --served-model-name="vicuna-13b-v1.3" --model="vicuna-13b-v1.3" --port=8090 --host="0.0.0.0" > output.log 2>&1 &
 
@@ -112,6 +119,73 @@ Avg latency: 4.545180882016818 seconds
 Profiling iterations: 100%|███████████████████████| 3/3 [00:42<00:00, 14.09s/it]
 Avg latency: 14.08749227412045 seconds
 ```
+
+```
+INFO 01-24 10:56:09 llm_engine.py:706] Avg prompt throughput: 1.6 tokens/s, Avg generation throughput: 43.1 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.2%, CPU KV cache usage: 0.0%
+INFO 01-24 10:56:14 llm_engine.py:706] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 45.3 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.3%, CPU KV cache usage: 0.0%
+```
+
+```
+hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
+"model": "vicuna-13b-v1.3",
+"prompt": "Singapore is a",
+"max_tokens": 64,
+"temperature": 0
+}' https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions
+```
+
+```
+$ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
+"model": "vicuna-13b-v1.3",
+"prompt": "Singapore is a",
+"max_tokens": 64,
+"temperature": 0
+}' https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions 
+
+Summary:
+  Total:	75.9269 secs
+  Slowest:	12.7161 secs
+  Fastest:	4.8917 secs
+  Average:	7.3568 secs
+  Requests/sec:	0.6585
+  
+  Total data:	27550 bytes
+  Size/request:	551 bytes
+
+Response time histogram:
+  4.892 [1]	|■
+  5.674 [0]	|
+  6.457 [29]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  7.239 [4]	|■■■■■■
+  8.021 [4]	|■■■■■■
+  8.804 [1]	|■
+  9.586 [0]	|
+  10.369 [7]	|■■■■■■■■■■
+  11.151 [2]	|■■■
+  11.934 [1]	|■
+  12.716 [1]	|■
+
+
+Latency distribution:
+  10% in 6.2370 secs
+  25% in 6.2916 secs
+  50% in 6.3943 secs
+  75% in 8.7868 secs
+  90% in 10.2277 secs
+  95% in 11.2759 secs
+  0% in 0.0000 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.1178 secs, 4.8917 secs, 12.7161 secs
+  DNS-lookup:	0.0383 secs, 0.0000 secs, 0.3832 secs
+  req write:	0.0001 secs, 0.0000 secs, 0.0003 secs
+  resp wait:	7.2386 secs, 4.8914 secs, 11.5366 secs
+  resp read:	0.0002 secs, 0.0001 secs, 0.0011 secs
+
+Status code distribution:
+  [200]	50 responses
+```
+
 
 - 4 GPU nodes (--tensor-parallel-size 4)
 ```
