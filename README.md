@@ -146,6 +146,7 @@ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
 }' https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions
 ```
 
+- TP=4
 ```
 $ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
 "model": "vicuna-13b-v1.3",
@@ -198,9 +199,63 @@ Status code distribution:
   [200]	50 responses
 ```
 
+- TP=1
+```
+$ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
+"model": "vicuna-13b-v1.3",
+"prompt": "Singapore is a",
+"max_tokens": 64,
+"temperature": 0
+}' https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions 
+
+Summary:
+  Total:	25.1643 secs
+  Slowest:	6.2806 secs
+  Fastest:	1.9791 secs
+  Average:	2.4396 secs
+  Requests/sec:	1.9869
+  
+  Total data:	27550 bytes
+  Size/request:	551 bytes
+
+Response time histogram:
+  1.979 [1]	|■
+  2.409 [41]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  2.839 [2]	|■■
+  3.270 [1]	|■
+  3.700 [0]	|
+  4.130 [0]	|
+  4.560 [0]	|
+  4.990 [4]	|■■■■
+  5.420 [0]	|
+  5.850 [0]	|
+  6.281 [1]	|■
+
+
+Latency distribution:
+  10% in 2.0408 secs
+  25% in 2.0656 secs
+  50% in 2.1119 secs
+  75% in 2.1767 secs
+  90% in 4.7426 secs
+  95% in 4.7427 secs
+  0% in 0.0000 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.2497 secs, 1.9791 secs, 6.2806 secs
+  DNS-lookup:	0.1635 secs, 0.0000 secs, 1.6348 secs
+  req write:	0.0001 secs, 0.0000 secs, 0.0002 secs
+  resp wait:	2.1895 secs, 1.9789 secs, 3.7841 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0003 secs
+
+Status code distribution:
+  [200]	50 responses
+```
 
 - 4 GPU nodes (--tensor-parallel-size 4)
 ```
 Profiling iterations: 100%|███████████████████████| 3/3 [01:11<00:00, 23.71s/it]
 Avg latency: 23.70484172180295 seconds
 ```
+
+
