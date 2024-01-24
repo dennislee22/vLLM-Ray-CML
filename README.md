@@ -22,7 +22,7 @@
 
 - Fitting a huge LLM into a single GPU with limited VRAM during LLM inference is often met with OOM error. Hosting a model with billions of parameters requires thorough understanding of the available ML framework techniques to load the model into the GPU without sacrificing the model precision and output.
 - As GPU prices grow exponentially with their size, so chances are companies are more likely to be able to afford multiple smaller GPU devices than a single gigantic one. Data scientists should explore ways to saturate GPU utilization, both VRAM and CUDA/Tensor cores in order to speed up the model inference process.
-- To quote an example, while inferencing a model with 7 billion parameters is be able to fit into a single GPU device with 40GB of memory, model with 30 billion parameters needs to involve Tensor Parallelism (TP) to partition the model weights into the VRAM of all the available GPU devices across multiple nodes. And this requires a scalable platform
+- While inferencing a model with 7 billion parameters is be able to fit into a single GPU device with 40GB of memory, model with 30 billion parameters needs to involve Tensor Parallelism (TP) to partition the model weights into the VRAM of all the available GPU devices across multiple nodes. This requires a scalable infrastructure platform.
 - This article illustrates simple steps to design a distributed LLM inference solution on a scalable platform with CML (Cloudera Machine Learning) on a Kubernetes platform (Openshift/Rancher).
 
 ### <a name="toc_1"></a>2. Design Considerations
