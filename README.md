@@ -1,5 +1,6 @@
 # vLLM-rayServe
 
+<img width="983" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7dbe7530-4987-475d-a955-e9f819b6026f">
 
 - Python3.10
 
@@ -46,6 +47,9 @@ Demands:
  (no resource demands)
 ```
 
+- CML applications:
+
+<img width="1414" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/58bcf80d-f549-4ec2-ac0f-364e7f38cf38">
 
 
 
