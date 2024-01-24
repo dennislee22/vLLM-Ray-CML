@@ -9,6 +9,8 @@ nvitop
 pip install ray[default]
 ```
 
+python -m vllm.entrypoints.openai.api_server --tensor-parallel-size=1 --served-model-name="vicuna-13b-v1.3" --model="vicuna-13b-v1.3" --port=8090 --host="0.0.0.0" > output.log 2>&1 &
+
 ```
 cdsw@m4u3p7qm2255m2by:~$ ray status --address 10.254.19.61:6379
 ======== Autoscaler status: 2024-01-23 13:19:25.607925 ========
