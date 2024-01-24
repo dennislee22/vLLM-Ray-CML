@@ -56,6 +56,16 @@ Demands:
  (no resource demands)
 ```
 
+
+```
+$ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions -H "Content-Type: application/json" -d '{
+"model": "vicuna-13b-v1.3",
+"prompt": "Singapore is a",
+"max_tokens": 64,
+"temperature": 0
+}'
+{"id":"cmpl-4f49932d923847b695b4ebe5e9494095","object":"text_completion","created":10708810,"model":"vicuna-13b-v1.3","choices":[{"index":0,"text":" small island nation located in Southeast Asia. It is known for its diverse culture, delicious food, and beautiful scenery. The country is a popular tourist destination, attracting millions of visitors each year.\n\nSingapore is a modern city-state with a highly developed economy. It is a","logprobs":null,"finish_reason":"length"}],"usage":{"prompt_tokens":4,"total_tokens":68,"completion_tokens":64}}
+```
 - CML applications:
 
 <img width="1414" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/58bcf80d-f549-4ec2-ac0f-364e7f38cf38">
