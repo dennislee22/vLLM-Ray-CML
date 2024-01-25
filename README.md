@@ -127,7 +127,6 @@ Demands:
  (no resource demands)
 ```
 
-
 #### <a name="toc_5"></a>3.3 Create Flask (Reverse Proxy) as Application
 
 - Create a reverse-proxy server (as the CML application) to serve the incoming traffics from the external network.
@@ -207,13 +206,14 @@ Status code distribution:
   [200]	50 responses
 ```
 
-- vLLM log shows successful inference as follows.
+- vLLM log shows successful inference.
 ```
 INFO 01-24 10:56:09 llm_engine.py:706] Avg prompt throughput: 1.6 tokens/s, Avg generation throughput: 43.1 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.2%, CPU KV cache usage: 0.0%
 INFO 01-24 10:56:14 llm_engine.py:706] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 45.3 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.3%, CPU KV cache usage: 0.0%
 ```
 
 #### <a name="toc_9"></a>5.2 tensor-parallel-size=4
+
 - Run load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey)
 
 ```
@@ -274,6 +274,9 @@ Status code distribution:
 
 ```
 !python benchmark_throughput.py --backend vllm --dataset ./ShareGPT_V3_unfiltered_cleaned_split.json --model open_llama_13b  --num-prompts=100
+```
+```
+!python benchmark_latency.py --tensor-parallel-size 1 --model vicuna-13b-v1.3  --n 10
 ```
 
 #### <a name="toc_11"></a>6.1 tensor-parallel-size=1
