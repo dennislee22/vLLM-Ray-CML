@@ -35,7 +35,7 @@ a# vLLM with Ray on CML
 - vLLM stores KV cache (gpu-memory-utilization setting) in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser percentage with the constrained GPU memory.<br>
 <img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296"><br>
 - In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffic from external network and traverse the traffic to the vLLM server running as a different pod. vLLM, by default, uses [Ray](https://github.com/ray-project/ray) technology that can scale out the worker pods. Using Ray with CML distributed mechanism is a perfect combo for delivering the scaling capability to the AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topic.
-- vLLM can also spin up [OpenAI-Compatible Server](https://docs.vllm.ai/en/latest/getting_started/quickstart.html) to serve model inference using OpenAI API protocol.
+- vLLM can also spin up [OpenAI-Compatible Server](https://docs.vllm.ai/en/latest/getting_started/quickstart.html) to serve various types of models using OpenAI API protocol.
 - All worker nodes should ideally be using the same NFS storage to share common files, libraries, codes, and model artifacts.
 
 ### <a name="toc_2"></a>3. Deployment Steps
