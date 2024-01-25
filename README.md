@@ -1,4 +1,4 @@
-a# vLLM with Ray on CML
+# vLLM with Ray on CML
 
 <img width="814" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/6a03d5bb-570c-44d8-8bad-55269905962c">
 
