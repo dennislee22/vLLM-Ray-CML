@@ -152,7 +152,7 @@ $ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.c
 
 #### <a name="toc_8"></a>5.1 tensor-parallel-size=1
 
-- Edit the [ray_dashboard_4pods.py](ray_dashboard_4pods.py) file and configure `tensor-parallel-size=1`. Restart Ray-dashboard application in CML.
+- Edit the [ray_dashboard_4pods.py](ray_dashboard_4pods.py) file and configure `tensor-parallel-size=1`. Restart `ray-dashboard` application in CML.
 - Run the load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey).
 
 ```
@@ -215,7 +215,7 @@ INFO 01-24 10:56:14 llm_engine.py:706] Avg prompt throughput: 0.0 tokens/s, Avg 
 
 #### <a name="toc_9"></a>5.2 tensor-parallel-size=4
 
-- Edit the [ray_dashboard_4pods.py](ray_dashboard_4pods.py) file and configure `tensor-parallel-size=4`. Restart Ray-dashboard application in CML.
+- Edit the [ray_dashboard_4pods.py](ray_dashboard_4pods.py) file and configure `tensor-parallel-size=4`. Restart `ray-dashboard` application in CML.
 - Run the load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey).
 
 ```
