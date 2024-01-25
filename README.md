@@ -79,7 +79,7 @@ git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 
 #### <a name="toc_4"></a>3.2 Create Ray (Dashboard+Head) as Application
 
-- Create the Ray Dashboard and Head (as the CML application).
+- Start the Ray Dashboard and Head service as the CML application.
 
 <img width="485" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7fbec7af-c1bd-4af5-bc70-435fb0b12220">
 
@@ -98,7 +98,7 @@ u56kjhvvmghgkpi3   5/5     Running   0          168m   10.254.19.56    worker-21
 uagy60mfci5qqntw   5/5     Running   0          54m    10.254.20.80    worker-20   <none>           <none>
 ```
   
-- Verify the status of Ray.
+- Verify the status of the created Ray cluster.
 
 ```
 cdsw@m4u3p7qm2255m2by:~$ ray status --address 10.254.19.61:6379
@@ -129,7 +129,7 @@ Demands:
 
 #### <a name="toc_5"></a>3.3 Create Flask (Reverse Proxy) as Application
 
-- Create a reverse-proxy server (as the CML application) to serve the incoming traffics from the external network.
+- Start a reverse-proxy services as the CML application for serving the incoming API inference request traffic from the external network.
 - In total, 2 CML applications (Flask and Ray Dashboard) should be up and running as shown below.
 
 <img width="800" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/58bcf80d-f549-4ec2-ac0f-364e7f38cf38">
