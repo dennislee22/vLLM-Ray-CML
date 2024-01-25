@@ -30,7 +30,7 @@
 
 - Deliver the benefits of Kubernetes to data scientists and yet, shield the complexities of K8s away from them by using SOTA application management or wrapper tool, ie. the ability to spawn multiple worker pods in parallel by utilizing user-friendly dashboard without having to write K8s yaml files. 
 - Using a single GPU for a small model inference is likely to achieve low latency but not necessarily high throughput (requests/sec).
-- Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to prevent network bottlenecks.
+- Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to overcome network bottlenecks.
 - Select a universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM matches both criteria and it also supports continuous batching (paged attention) that helps to saturate GPU resources.
 - vLLM stores KV cache (gpu-memory-utilization) in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.<br>
 <img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296"><br>
