@@ -23,24 +23,24 @@
 
 - Fitting a huge LLM into a single GPU with limited VRAM during LLM inference is often met with OOM error. Hosting a model with billions of parameters requires thorough understanding of the available ML framework techniques to load the model into the GPU without sacrificing the model precision and output.
 - As GPU prices grow exponentially with their size, so chances are companies are more likely to be able to afford multiple smaller GPU devices than a single gigantic one. Data scientists should explore ways to saturate GPU utilization, both VRAM and CUDA/Tensor cores in order to speed up the model inference process.
-- While inferencing a model with 7 billion parameters is be able to fit into a single GPU device with 40GB of memory, model with 30 billion parameters needs to leverage on `Tensor Parallelism (TP)` to partition the model weights into the VRAM of all the available GPU devices across multiple nodes. This requires a scalable infrastructure platform.
+- While inferencing a model with 7 billion parameters is able to fit into a single GPU device with 40GB of memory, a model with 30 billion parameters needs to leverage on `Tensor Parallelism (TP)` to partition the model weights into the VRAM of all the available GPU devices across multiple nodes. This requires a scalable infrastructure platform.
 - This article illustrates simple steps to design a distributed LLM inference solution on a scalable platform with CML (Cloudera Machine Learning) on a Kubernetes platform (Openshift/Rancher).
 
 ### <a name="toc_1"></a>2. Design Factors
 
-- Deliver the benefits of Kubernetes to data scientist and yet, shield the complexities of K8s away from them by using SOTA application management or wrapper tool, ie. ability of spawning muliple worker pods in parallel by utilizing user-friendly dashboard without having to write K8s yaml files. 
+- Deliver the benefits of Kubernetes to data scientists and yet, shield the complexities of K8s away from them by using SOTA application management or wrapper tool, ie. the ability to spawn multiple worker pods in parallel by utilizing user-friendly dashboard without having to write K8s yaml files. 
 - Using a single GPU for a small model inference is likely to achieve low latency but not necessarily high throughput (requests/sec).
-- Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to prevent network bottleneck.
-- Select an universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM match both criterias and it also supports continuous batching (paged attention) that helps to saturate GPU resources.
+- Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to prevent network bottlenecks.
+- Select a universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM matches both criteria and it also supports continuous batching (paged attention) that helps to saturate GPU resources.
 - vLLM stores KV cache (gpu-memory-utilization) in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.<br>
 <img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296"><br>
-- In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffics from external network and traverse the traffics to the vLLM server running as a different pod. vLLM, by default, use Ray technology that is able to scale out the worker pods. Using Ray with CML distributed API is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topics.
+- In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffic from external network and traverse the traffic to the vLLM server running as a different pod. vLLM, by default, uses [Ray](https://github.com/ray-project/ray) technology that can scale out the worker pods. Using Ray with CML distributed API is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topics.
 - vLLM can also spin up [OpenAI-Compatible Server](https://docs.vllm.ai/en/latest/getting_started/quickstart.html) to serve model inference using OpenAI API protocol.
-- All worker nodes should ideally be using the same NFS storage to share common files, libraries, codes and model artifacts.
+- All worker nodes should ideally be using the same NFS storage to share common files, libraries, codes, and model artifacts.
 
 ### <a name="toc_2"></a>3. Deployment Steps
 
-- Only 2 Python scripts are required to setup the distributed LLM inference solution.
+- Only 2 Python scripts are required to set up the distributed LLM inference solution.
 - [ray_dashboard_4pods.py](ray_dashboard_4pods.py) script is crafted to start the Ray service and appoint the pod as the head. Ray dashboard is also included. vLLM engine will also be initiated in the same pod and it will communicate with Ray head (port 6379) automatically behind the scene. OPENAI compatible server is also started in the same vLLM pod for serving model inference using OpenAI API protocol. Note that 4 worker pods with GPU are configured in this script and you may change the value accordingly.
 - [reverse-proxy.py](reverse-proxy.py) script is designed to use Flask as the proxy server. External clients will connect to this frontend and Flask will relay the incoming request to the vLLM pod as the `backend server`.
   
