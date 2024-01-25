@@ -31,8 +31,8 @@
 - Using a single GPU for a small model inference is likely to achieve low latency but not necessarily high throughput (requests/sec).
 - Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to prevent network bottleneck.
 - Select an universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM match both criterias and it also supports continuous batching (paged attention) that helps to saturate GPU resources.
-- vLLM stores KV cache in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.
-<img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296">
+- vLLM stores KV cache in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.<br>
+<img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296"><br>
 - In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffics from external network and traverse the traffics to the vLLM server running as a different pod. vLLM, by default, use Ray technology that is able to scale out the worker pods. Using Ray with CML distributed API is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topics.
 - All worker nodes should ideally be using the same NFS storage to share common files, libraries, codes and model artifacts.
 
@@ -46,11 +46,11 @@
 
 - Add the following environment variables in the CML project.
 
-<img width="1185" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/299b4736-b9fc-4f91-9f8f-09e52bd25f5d"><br>
+<img width="800" alt="image" src="https://github.com/dennislee22/vLLM-Ray-CML/assets/35444414/d630b3d1-41f7-4dd0-b3c4-a01692e4cc45">
 
-- Create a new CML session in the project.
-  
-<img width="1414" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/0ab49111-1b91-4491-9e81-605822a7f84d"><br>
+- Create a new CML session in the project. The system will communicate with K8s scheduler to spin a pod with the selected resource profile.
+
+<img width="800" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/006ddc97-fbc8-4c92-a9b8-076c51b4c8ee">
 
 - Open the Terminal window in the CML session and install the necessary Python packages.
 
@@ -72,7 +72,11 @@ git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 
 #### <a name="toc_4"></a>3.2 Create Ray (Dashboard+Head) as Application
 
-- Upon successful creation, browse the Ray dashboard URL.
+- Create the Ray Dashboard and Head (as the CML application).
+
+<img width="485" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7fbec7af-c1bd-4af5-bc70-435fb0b12220">
+
+- Upon successful creation, browse the Ray Dashboard URL.
 
   
 - Verify the status of Ray.
@@ -86,18 +90,12 @@ git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 
 
 
-### <a name="toc_6"></a>4. Single Node/Pod without ZeRO
-
-
-- Python3.10
-
-<img width="1411" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/006ddc97-fbc8-4c92-a9b8-076c51b4c8ee">
+### <a name="toc_7"></a>4. 
 
 
 
 <img width="1328" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/11578915-b958-4d61-9dd9-24f7f7f3d9af">
 
-<img width="485" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7fbec7af-c1bd-4af5-bc70-435fb0b12220">
 
 python -m vllm.entrypoints.openai.api_server --tensor-parallel-size=1 --served-model-name="vicuna-13b-v1.3" --model="vicuna-13b-v1.3" --port=8090 --host="0.0.0.0" > output.log 2>&1 &
 
