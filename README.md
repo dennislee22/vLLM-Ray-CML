@@ -5,18 +5,18 @@
 ## <a name="toc_0"></a>Table of Contents
 [//]: # (TOC)
 [1. Objective](#toc_0)<br>
-[2. Design Considerations](#toc_1)<br>
+[2. Design Factors](#toc_1)<br>
 [3. Deployment Steps](#toc_2)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[3.1. Create CML Session](#toc_3)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[3.2. Create Ray (Dashboard+Head) in CML Application](#toc_4)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[3.3. Create Flask (Reverse Proxy) in CML Application](#toc_5)<br>
-[4. Testing Result](#toc_7)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[4.1. tensor-parallel-size=1](#toc_8)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[4.2. tensor-parallel-size=2](#toc_9)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[4.3. tensor-parallel-size=4](#toc_10)<br>
-[5. Load Test with Hey](#toc_11)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[5.1. tensor-parallel-size=1](#toc_12)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[5.2. tensor-parallel-size=4](#toc_13)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[3.2. Create Ray (Dashboard+Head) as Application](#toc_4)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[3.3. Create Flask (Reverse Proxy) as Application](#toc_5)<br>
+[4. Testing Result](#toc_6)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[4.1. tensor-parallel-size=1](#toc_7)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[4.2. tensor-parallel-size=2](#toc_8)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[4.3. tensor-parallel-size=4](#toc_9)<br>
+[5. Load Test with Hey](#toc_10)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[5.1. tensor-parallel-size=1](#toc_11)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[5.2. tensor-parallel-size=4](#toc_12)<br>
 
 ### <a name="toc_0"></a>1. Objective
 
@@ -25,80 +25,24 @@
 - While inferencing a model with 7 billion parameters is be able to fit into a single GPU device with 40GB of memory, model with 30 billion parameters needs to involve Tensor Parallelism (TP) to partition the model weights into the VRAM of all the available GPU devices across multiple nodes. This requires a scalable infrastructure platform.
 - This article illustrates simple steps to design a distributed LLM inference solution on a scalable platform with CML (Cloudera Machine Learning) on a Kubernetes platform (Openshift/Rancher).
 
-### <a name="toc_1"></a>2. Design Considerations
+### <a name="toc_1"></a>2. Design Factors
 
+- Deliver the benefits of Kubernetes to data scientist and yet, shield the complexities of K8s away from them by using SOTA application management or wrapper tool, ie. ability of spawning muliple worker pods in parallel by utilizing user-friendly dashboard without having to write K8s yaml files. 
 - Using a single GPU for a small model inference is likely to achieve low latency but not necessarily high throughput (requests/sec).
-- Using TP would achieve high throughput but at the expense of low latency. 
-- The experiments utilize `batch size=32` configuration for fine-tuning/training the models. Although using higher batch size would increase the training speed, batch size 32 is selected to perform apple-to-apple comparison of the training outcome in terms of training duration and VRAM utilization rate with/without ZeRO technique in place.
-- As `t5-large` model has [issue](https://discuss.huggingface.co/t/t5-variants-return-training-loss-0-and-validation-loss-nan-while-fine-tuning/30839) with FP16 during training, FP32 is configured for the experiments. 
-- Table below summarizes the benchmark outcome as the result of running the experiments. Each running pod is attached to 1 unit of Nvidia A100-PCIE-40GB device.
+- Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to prevent network bottleneck.
+- Select an universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM match both criterias and it also supports continuous batching (paged attention) that helps to saturate GPU resources.
+- vLLM stores KV cache in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.
+<img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296">
+- In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffics from external network and traverse the traffics to the vLLM server running as a different pod. vLLM, by default, use Ray technology that is able to scale out the worker pods. Using Ray with CML distributed API is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topics.
+- All worker nodes should ideally be using the same NFS storage to share common files, libraries, codes and model artifacts.
 
-| Model     | Technique           | Total Node/Pod | Duration    | epoch  | VRAM (each Pod)   |
-| :---      |     :---:           |  :---:         |  ---:       |  :---: |    :---:          |
-| t5-small  | w/o deepspeed       |     1          | ~742 secs   |    5   |  3 GB             |
-| t5-large  | w/o deepspeed       |     1          | ~7465 secs  |    3   |  15 GB            |
-| t5-small  | deepspeed ZeRO-1    |     3          | ~922 secs   |    5   | 5 GB              |
-| t5-large  | deepspeed ZeRO-1    |     3          | ~10530 secs |    3   |  13 GB            |
-| t5-large  | deepspeed ZeRO-1    |     2          |      -      |    3   | 15 GB             |
-| t5-large  | deepspeed ZeRO-3 Offload  |     3    | ~11044 secs |    3   |  9 GB             |
-| t5-3b     | w/o deepspeed       |     1          |      -      |    3   |  OOM              |
-| t5-3b     | deepspeed ZeRO-3 Offload  |     3    |      N/A    |    3   | 21 GB             |
+### <a name="toc_2"></a>3. Deployment Steps
 
-<sub>OOM = Out-of-Memory</sub>
 
-#### Summary:
-- deepspeed `ZeRO-1` with 3 nodes/pods manage to reduce the VRAM consumption when training `t5-large` model, but at the expense of slower training speed compared to single node/pod training without deepspeed.
--  When training LLM in the multi-nodes landscape, the speed is often bottlenecked by network communication overhead (both physical underlay and virtual overlay network) and GPU-CPU-GPU transition process. This can be overcome by resorting to costly options such as SR-IOV and Infiniband technology. Here's the [reference](https://docs.nvidia.com/networking/display/public/sol/rdg+for+accelerating+ai+workloads+in+red+hat+ocp+with+nvidia+dgx+a100+servers+and+nvidia+infiniband+fabric#src-99399137_RDGforAcceleratingAIWorkloadsinRedHatOCPwithNVIDIADGXA100ServersandNVIDIAInfiniBandFabric-OpenShiftContainerPlatformNetworking).
-- deepspeed `ZeRO-3 Offload` can exploit both GPU and CPU memory in order to optimize VRAM consumption further compared to `ZeRO-1`. It offloads the optimizer memory and computation from the GPU to the host CPU which is a compelling solution to address memory inefficiency of Adam optimizer. ZeRO Offload uses DeepSpeedCPUAdam which is a highly optimized CPU implementation of Adam, increasing speed by 5-folds compared to standard PyTorch.
-- The model size must be significantly huge to take advantage of the deepspeed technology. As seen in `t5-small` model training result, the loaded VRAM is lower than with deepspeed.
-- 🤗 trainer code is highly compatible with deepspeed implementation, requires only little code adjustments.
 
-### <a name="toc_2"></a>3. Preparation
-
-- The LLM training in the following experiments use 🤗 Transformers and PyTorch software packages. PyTorch 2.1.2 requires CUDA12.1 as shown below.  
-<img width="425" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/d739357e-1421-439d-9395-2bbdf03bbd57"><br>
-
-- The docker image in these experiments, has been installed with [Nvida CUDA nvcc](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html) version 12.2 for fixing some other incompatibilities.
-- As a reference, the outcome of the experiments shows that CUDA nvcc 12.2 can be used as reported in the following training log.
-```
-Installed CUDA version 12.2 does not match the version torch was compiled with 12.1 but since the APIs are compatible, accepting this combination
-```
-
-#### <a name="toc_3"></a>3.1 Build Custom Docker Image
-
-- Build a Docker image locally (based on the native CML image with Jupyter notebook) and push it to the external docker registry, which is represented by Nexus repository in this example.
-- The image is installed with the required Nvidia packages. Specific CUDA packages can be referenced from this [Nvidia (ubuntu2004 image)](https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/) site.
-- For inter-nodes training deployment, deepspeed uses launchers such as OpenMPI and PDSH (a variant of rsh) which are both installed in the docker image as well.
-
-```
-docker build -t dlee-deepspeed:2024.1.4 . -f deepspeed-pdsh-mpi-nvcc-jupyter
-docker tag dlee-deepspeed:2024.1.4 10.113.204.134:9999/pvcds152/p3.10-nvcc-pdsh-mpi-jptr:2024.1.4
-docker push 10.113.204.134:9999/pvcds152/p3.10-nvcc-pdsh-mpi-jptr:2024.1.1
-```
-
-- Build another Docker image locally (based on the CML image with Workbench notebook) and push it to the external docker registry. Use this image instead of iPython, if you want to run the training process in the form of CML job.
-
-```
-docker build -t dlee-deepspeed:2024.1.4 . -f deepspeed-pdsh-mpi-nvcc-wb
-docker tag dlee-deepspeed:2024.1.4 10.113.204.134:9999/pvcds152/p3.10-nvcc-pdsh-mpi-wb:2024.1.4
-docker push 10.113.204.134:9999/pvcds152/p3.10-nvcc-pdsh-mpi-wb:2024.1.4
-```
-
-- Register the new image in CML.
-
-<img width="800" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/38c82e3c-2ee4-4e00-9fb1-7a2f2c582779"><br>
-
-- Verify that the image has been registered successfully.
-
-<img width="500" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/bdc45baa-54a2-4e39-afa1-7e4ff8988192"><br>
-
-#### <a name="toc_4"></a>3.2 Create CML Session
+#### <a name="toc_3"></a>3.1 Create CML Session
 
 - Create a new CML project with Python 3.10 and GPU variant.
-
-- Add the newly registered image in the CML project.
-
-<img width="1422" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/a88ca709-a10b-43f1-bd30-b9f6786bafbc"><br>
 
 - Add the following environment variables in the CML project.
 
@@ -108,66 +52,48 @@ docker push 10.113.204.134:9999/pvcds152/p3.10-nvcc-pdsh-mpi-wb:2024.1.4
   
 <img width="1414" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/0ab49111-1b91-4491-9e81-605822a7f84d"><br>
 
-- Open the Terminal window in the CML session and run the following commands to replace the preconfigured CUDA path with the installed CUDA version in the custom docker image.
-  
-```
-$ rm /usr/local/cuda
-$ ln -s /usr/local/cuda-12.2 /usr/local/cuda
-$ ls -l /usr/local/cuda
-lrwxrwxrwx. 1 cdsw cdsw 20 Jan  4 05:38 /usr/local/cuda -> /usr/local/cuda-12.2
-```
-- Install the necessary Python packages.
+- Open the Terminal window in the CML session and install the necessary Python packages.
 
 ```
 pip install -r requirements.txt
 ```
 
-- Verify the status of deepspeed.
-
-<img width="500" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/abe5a96d-780c-4fe7-b8aa-f943317ec3ff"><br>
-
-
-#### <a name="toc_5"></a>3.3 Create Tensorboard in CML Application
-
-- Tensorboard is deployed to monitor the training/validation loss. The training logs are serialized and reported to Tensorboard as defined in the training script.
-- Create Tensorboard in the CML application
-<img width="476" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/f7a42bef-9c1e-4910-a68b-b9b9961ba831">
-
-- Upon successful creation, browse the Tensorboard website.
-<img width="571" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/68b4c50e-b536-458e-ad00-7b67716097af">
-
-
-#### <a name="toc_6"></a>3.4 Prepare Dataset & Model
-
-- In the CML session, run the [prep_dataset.ipynb](prep_dataset.ipynb) to prepare/tokenize the wikiSQL dataset prior to fine-tuning the model.
-- You may also opt to clone/download the LFS model in advance.
-
-```
-git-lfs clone https://huggingface.co/t5-large
-git-lfs clone https://huggingface.co/t5-small
-```
-
-### <a name="toc_7"></a>4. Single Node/Pod without ZeRO
-
-<img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296">
-
-- Python3.10
-
-<img width="1411" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/006ddc97-fbc8-4c92-a9b8-076c51b4c8ee">
-
-```
-vllm
-nvitop
-pip install ray[default]
-```
+- Update the following packages.
 
 ```
 pip install -U protobuf flask markupsafe jinja2
 ```
 
+- Clone/download the LFS model in advance. In this case, Vicuna-13b model is selected for testing purpose. Alternatvely, you may also run this as CML job to download the model.
+
 ```
 git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 ```
+
+#### <a name="toc_4"></a>3.2 Create Ray (Dashboard+Head) as Application
+
+- Upon successful creation, browse the Ray dashboard URL.
+
+  
+- Verify the status of Ray.
+
+
+
+#### <a name="toc_5"></a>3.3 Create Flask (Reverse Proxy) as Application
+
+- Create a reverse-proxy server (as the CML application) to serve the incoming traffics from the external network.
+<img width="476" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/f7a42bef-9c1e-4910-a68b-b9b9961ba831">
+
+
+
+### <a name="toc_6"></a>4. Single Node/Pod without ZeRO
+
+
+- Python3.10
+
+<img width="1411" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/006ddc97-fbc8-4c92-a9b8-076c51b4c8ee">
+
+
 
 <img width="1328" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/11578915-b958-4d61-9dd9-24f7f7f3d9af">
 
