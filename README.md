@@ -74,7 +74,7 @@ pip install -U protobuf flask markupsafe jinja2
 git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 ```
 
-- Prepare the scripts in the editor.
+- Prepare the scripts in the editor and save them.
 <img width="800" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/11578915-b958-4d61-9dd9-24f7f7f3d9af">
 
 #### <a name="toc_4"></a>3.2 Create Ray (Dashboard+Head) as Application
