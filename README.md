@@ -152,7 +152,7 @@ $ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.c
 
 #### <a name="toc_8"></a>5.1 tensor-parallel-size=1
 
-- Run load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey)
+- Run the load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey).
 
 ```
 $ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
@@ -214,7 +214,7 @@ INFO 01-24 10:56:14 llm_engine.py:706] Avg prompt throughput: 0.0 tokens/s, Avg 
 
 #### <a name="toc_9"></a>5.2 tensor-parallel-size=4
 
-- Run load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey)
+- Run the load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey).
 
 ```
 $ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
@@ -270,7 +270,7 @@ Status code distribution:
 
 ### <a name="toc_10"></a>6. More Experiments
 
-- Check out the following testing offline inference results that were carried out using [vLLM benchmark throughput](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_throughput.py) and [vLLM benchmark latency](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_latency.py) scripts. The following test cases were done using `open_llama_13b` model.
+- Check out the following offline inference results that were carried out using [vLLM benchmark throughput](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_throughput.py) and [vLLM benchmark latency](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_latency.py) scripts. The following test cases were done using the `open_llama_13b` model.
 
 ```
 !python benchmark_throughput.py --backend vllm --dataset ./ShareGPT_V3_unfiltered_cleaned_split.json --model open_llama_13b  --num-prompts=100
