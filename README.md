@@ -10,13 +10,14 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[3.1. Create CML Session](#toc_3)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[3.2. Create Ray (Dashboard+Head) as Application](#toc_4)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[3.3. Create Flask (Reverse Proxy) as Application](#toc_5)<br>
-[4. Testing Result](#toc_6)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[4.1. tensor-parallel-size=1](#toc_7)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[4.2. tensor-parallel-size=2](#toc_8)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[4.3. tensor-parallel-size=4](#toc_9)<br>
-[5. Load Test with Hey](#toc_10)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[5.1. tensor-parallel-size=1](#toc_11)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[5.2. tensor-parallel-size=4](#toc_12)<br>
+[4. API Test](#toc_6)<br>
+[5. Load Test with Hey](#toc_7)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[5.1. tensor-parallel-size=1](#toc_8)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[5.2. tensor-parallel-size=4](#toc_9)<br>
+[6. More Experiments](#toc_10)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[6.1. tensor-parallel-size=1](#toc_11)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[6.2. tensor-parallel-size=2](#toc_12)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[6.2. tensor-parallel-size=4](#toc_13)<br>
 
 ### <a name="toc_0"></a>1. Objective
 
@@ -31,7 +32,7 @@
 - Using a single GPU for a small model inference is likely to achieve low latency but not necessarily high throughput (requests/sec).
 - Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to prevent network bottleneck.
 - Select an universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM match both criterias and it also supports continuous batching (paged attention) that helps to saturate GPU resources.
-- vLLM stores KV cache in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.<br>
+- vLLM stores KV cache (gpu-memory-utilization) in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.<br>
 <img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296"><br>
 - In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffics from external network and traverse the traffics to the vLLM server running as a different pod. vLLM, by default, use Ray technology that is able to scale out the worker pods. Using Ray with CML distributed API is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topics.
 - vLLM can also spin up [OpenAI-Compatible Server](https://docs.vllm.ai/en/latest/getting_started/quickstart.html) to serve model inference using OpenAI API protocol.
@@ -83,6 +84,19 @@ git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 <img width="485" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7fbec7af-c1bd-4af5-bc70-435fb0b12220">
 
 - Upon successful creation, browse the Ray Dashboard URL.
+
+<img width="1432" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/752791a1-8701-4622-af66-a6648d6544e4">
+
+- In the K8s cluster, it shows 4 GPU pods have been provisioned automatically, initiated by the script.
+
+```
+$ oc -n cml1-user-5 get pod -o wide
+NAME               READY   STATUS    RESTARTS   AGE    IP              NODE        NOMINATED NODE   READINESS GATES
+4wr5wz8gfzt0b7s8   5/5     Running   0          54m    10.254.21.215   worker-19   <none>           <none>
+8tydoaspor1choqq   5/5     Running   0          54m    10.254.18.73    worker-18   <none>           <none>
+u56kjhvvmghgkpi3   5/5     Running   0          168m   10.254.19.56    worker-21   <none>           <none>
+uagy60mfci5qqntw   5/5     Running   0          54m    10.254.20.80    worker-20   <none>           <none>
+```
   
 - Verify the status of Ray.
 
@@ -121,9 +135,9 @@ Demands:
 
 <img width="800" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/58bcf80d-f549-4ec2-ac0f-364e7f38cf38">
 
-### <a name="toc_6"></a>4. Testing Result
+### <a name="toc_6"></a>4. API Test
 
-- Run the follwong curl command pointing to the reverse-proxy URL to validate the inference result.
+- Run the following curl command pointing to the reverse-proxy URL to validate the inference result.
 
 ```
 $ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions -H "Content-Type: application/json" -d '{
@@ -135,136 +149,12 @@ $ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.c
 {"id":"cmpl-4f49932d923847b695b4ebe5e9494095","object":"text_completion","created":10708810,"model":"vicuna-13b-v1.3","choices":[{"index":0,"text":" small island nation located in Southeast Asia. It is known for its diverse culture, delicious food, and beautiful scenery. The country is a popular tourist destination, attracting millions of visitors each year.\n\nSingapore is a modern city-state with a highly developed economy. It is a","logprobs":null,"finish_reason":"length"}],"usage":{"prompt_tokens":4,"total_tokens":68,"completion_tokens":64}}
 ```
 
+### <a name="toc_7"></a>5. Load Test with Hey
 
+#### <a name="toc_8"></a>5.1 tensor-parallel-size=1
 
-<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/01364d62-d27f-4d94-ae13-e65e375ef1e8">
+- Run load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey)
 
-<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/22203782-3652-4c09-937a-34dffef60bf2">
-
-<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/b83f7aa6-9719-40d2-8602-8ad20f55a274">
-
-<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/f6c1c0b8-1a9a-4558-a646-f0725a22f447">
-
-<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/ccde5e5a-7830-4cef-a04f-978b6cfbe063">
-
-<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/a70759a3-730b-477f-aa40-6c30b60ca04f">
-
-
-```
-!python benchmark_throughput.py --backend vllm --dataset ./ShareGPT_V3_unfiltered_cleaned_split.json --model open_llama_13b  --num-prompts=100
-```
-
-- 1 GPU node
-```
-Processed prompts: 100%|██████████████████████| 100/100 [00:43<00:00,  2.32it/s]
-Throughput: 2.32 requests/s, 1056.36 tokens/s
-```
-- 2 GPU nodes
-```
-Processed prompts: 100%|██████████████████████| 100/100 [01:41<00:00,  1.02s/it]
-Throughput: 0.98 requests/s, 446.75 tokens/s
-```
-- 4 GPU nodes
-
-```
-Processed prompts: 100%|██████████████████████| 100/100 [02:49<00:00,  1.70s/it]
-Throughput: 0.59 requests/s, 268.08 tokens/s
-```
-
-<img width="1432" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/752791a1-8701-4622-af66-a6648d6544e4">
-
-
-$ oc -n cml1-user-5 get pod -o wide
-NAME               READY   STATUS    RESTARTS   AGE    IP              NODE        NOMINATED NODE   READINESS GATES
-4wr5wz8gfzt0b7s8   5/5     Running   0          54m    10.254.21.215   worker-19   <none>           <none>
-8tydoaspor1choqq   5/5     Running   0          54m    10.254.18.73    worker-18   <none>           <none>
-u56kjhvvmghgkpi3   5/5     Running   0          168m   10.254.19.56    worker-21   <none>           <none>
-uagy60mfci5qqntw   5/5     Running   0          54m    10.254.20.80    worker-20   <none>           <none>
-
-```
-!python benchmark_latency.py --tensor-parallel-size 1 --model vicuna-13b-v1.3  --n 10
-```
-
-- 1 GPU node  (--tensor-parallel-size 1)
-```
-Profiling iterations: 100%|███████████████████████| 3/3 [00:13<00:00,  4.55s/it]
-Avg latency: 4.545180882016818 seconds
-```
-
-- 2 GPU nodes (--tensor-parallel-size 2)
-```
-Profiling iterations: 100%|███████████████████████| 3/3 [00:42<00:00, 14.09s/it]
-Avg latency: 14.08749227412045 seconds
-```
-
-```
-INFO 01-24 10:56:09 llm_engine.py:706] Avg prompt throughput: 1.6 tokens/s, Avg generation throughput: 43.1 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.2%, CPU KV cache usage: 0.0%
-INFO 01-24 10:56:14 llm_engine.py:706] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 45.3 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.3%, CPU KV cache usage: 0.0%
-```
-
-```
-hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
-"model": "vicuna-13b-v1.3",
-"prompt": "Singapore is a",
-"max_tokens": 64,
-"temperature": 0
-}' https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions
-```
-
-- TP=4
-```
-$ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
-"model": "vicuna-13b-v1.3",
-"prompt": "Singapore is a",
-"max_tokens": 64,
-"temperature": 0
-}' https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions 
-
-Summary:
-  Total:	75.9269 secs
-  Slowest:	12.7161 secs
-  Fastest:	4.8917 secs
-  Average:	7.3568 secs
-  Requests/sec:	0.6585
-  
-  Total data:	27550 bytes
-  Size/request:	551 bytes
-
-Response time histogram:
-  4.892 [1]	|■
-  5.674 [0]	|
-  6.457 [29]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  7.239 [4]	|■■■■■■
-  8.021 [4]	|■■■■■■
-  8.804 [1]	|■
-  9.586 [0]	|
-  10.369 [7]	|■■■■■■■■■■
-  11.151 [2]	|■■■
-  11.934 [1]	|■
-  12.716 [1]	|■
-
-
-Latency distribution:
-  10% in 6.2370 secs
-  25% in 6.2916 secs
-  50% in 6.3943 secs
-  75% in 8.7868 secs
-  90% in 10.2277 secs
-  95% in 11.2759 secs
-  0% in 0.0000 secs
-
-Details (average, fastest, slowest):
-  DNS+dialup:	0.1178 secs, 4.8917 secs, 12.7161 secs
-  DNS-lookup:	0.0383 secs, 0.0000 secs, 0.3832 secs
-  req write:	0.0001 secs, 0.0000 secs, 0.0003 secs
-  resp wait:	7.2386 secs, 4.8914 secs, 11.5366 secs
-  resp read:	0.0002 secs, 0.0001 secs, 0.0011 secs
-
-Status code distribution:
-  [200]	50 responses
-```
-
-- TP=1
 ```
 $ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
 "model": "vicuna-13b-v1.3",
@@ -317,10 +207,141 @@ Status code distribution:
   [200]	50 responses
 ```
 
-- 4 GPU nodes (--tensor-parallel-size 4)
+- vLLM log shows successful inference as follows.
+```
+INFO 01-24 10:56:09 llm_engine.py:706] Avg prompt throughput: 1.6 tokens/s, Avg generation throughput: 43.1 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.2%, CPU KV cache usage: 0.0%
+INFO 01-24 10:56:14 llm_engine.py:706] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 45.3 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.3%, CPU KV cache usage: 0.0%
+```
+
+#### <a name="toc_9"></a>5.2 tensor-parallel-size=4
+- Run load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey)
+
+```
+$ hey -c 5 -m POST -n 50 -H "Content-Type: application/json" -d '{
+"model": "vicuna-13b-v1.3",
+"prompt": "Singapore is a",
+"max_tokens": 64,
+"temperature": 0
+}' https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions 
+
+Summary:
+  Total:	75.9269 secs
+  Slowest:	12.7161 secs
+  Fastest:	4.8917 secs
+  Average:	7.3568 secs
+  Requests/sec:	0.6585
+  
+  Total data:	27550 bytes
+  Size/request:	551 bytes
+
+Response time histogram:
+  4.892 [1]	|■
+  5.674 [0]	|
+  6.457 [29]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  7.239 [4]	|■■■■■■
+  8.021 [4]	|■■■■■■
+  8.804 [1]	|■
+  9.586 [0]	|
+  10.369 [7]	|■■■■■■■■■■
+  11.151 [2]	|■■■
+  11.934 [1]	|■
+  12.716 [1]	|■
+
+
+Latency distribution:
+  10% in 6.2370 secs
+  25% in 6.2916 secs
+  50% in 6.3943 secs
+  75% in 8.7868 secs
+  90% in 10.2277 secs
+  95% in 11.2759 secs
+  0% in 0.0000 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.1178 secs, 4.8917 secs, 12.7161 secs
+  DNS-lookup:	0.0383 secs, 0.0000 secs, 0.3832 secs
+  req write:	0.0001 secs, 0.0000 secs, 0.0003 secs
+  resp wait:	7.2386 secs, 4.8914 secs, 11.5366 secs
+  resp read:	0.0002 secs, 0.0001 secs, 0.0011 secs
+
+Status code distribution:
+  [200]	50 responses
+```
+
+### <a name="toc_10"></a>6. More Experiments
+
+- Check out the following testing offline inference results that were carried out using [vLLM benchmark throughput](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_throughput.py) and [vLLM benchmark latency](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_latency.py) scripts. The following test cases were done using `open_llama_13b` model.
+
+```
+!python benchmark_throughput.py --backend vllm --dataset ./ShareGPT_V3_unfiltered_cleaned_split.json --model open_llama_13b  --num-prompts=100
+```
+
+#### <a name="toc_11"></a>6.1 tensor-parallel-size=1
+
+- When loading the `vicuna-13b-v1.3` model into the single GPU node, `nvitop` reports ~60% memory utilization initially.
+
+<img width="700" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/01364d62-d27f-4d94-ae13-e65e375ef1e8">
+
+- And because the `gpu-memory-utilization` is set as 0.7 (default value is 0.9), vLLM will use the balance of 70% of the total memory capacity (after deducting the above ~60% model weights utilization) for KV cache.
+
+<img width="700" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/22203782-3652-4c09-937a-34dffef60bf2">
+
+```
+Processed prompts: 100%|██████████████████████| 100/100 [00:43<00:00,  2.32it/s]
+Throughput: 2.32 requests/s, 1056.36 tokens/s
+```
+
+```
+Profiling iterations: 100%|███████████████████████| 3/3 [00:13<00:00,  4.55s/it]
+Avg latency: 4.545180882016818 seconds
+```
+
+#### <a name="toc_12"></a>6.2 tensor-parallel-size=2
+
+- When loading the `vicuna-13b-v1.3` model into the 2 GPU nodes, `nvitop` reports ~30% memory utilization initially. This is the result of applying `tensor-parallel-size=2` whereby vLLM partitions the model weights and load them into 2 GPU nodes.
+
+<img width="700" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/b83f7aa6-9719-40d2-8602-8ad20f55a274">
+
+- And because the `gpu-memory-utilization` is set as 0.7 (default value is 0.9), vLLM will use the balance of 70% of the total memory capacity (after deducting the above ~30% model weights utilization) for KV cache.
+
+<img width="700" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/f6c1c0b8-1a9a-4558-a646-f0725a22f447">
+
+```
+Processed prompts: 100%|██████████████████████| 100/100 [01:41<00:00,  1.02s/it]
+Throughput: 0.98 requests/s, 446.75 tokens/s
+```
+
+```
+Profiling iterations: 100%|███████████████████████| 3/3 [00:42<00:00, 14.09s/it]
+Avg latency: 14.08749227412045 seconds
+```
+
+#### <a name="toc_13"></a>6.3 tensor-parallel-size=4
+
+- When loading the `vicuna-13b-v1.3` model into the 4 GPU nodes, `nvitop` reports ~16% memory utilization initially. This is the result of applying `tensor-parallel-size=4` whereby vLLM partitions the model weights and load them into 4 GPU nodes.
+  
+<img width="700" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/ccde5e5a-7830-4cef-a04f-978b6cfbe063">
+
+- And because the `gpu-memory-utilization` is set as 0.7 (default value is 0.9), vLLM will use the balance of 70% of the total memory capacity (after deducting the above ~16% model weights utilization) for KV cache.
+
+<img width="700" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/a70759a3-730b-477f-aa40-6c30b60ca04f">
+
+```
+Processed prompts: 100%|██████████████████████| 100/100 [02:49<00:00,  1.70s/it]
+Throughput: 0.59 requests/s, 268.08 tokens/s
+```
+
 ```
 Profiling iterations: 100%|███████████████████████| 3/3 [01:11<00:00, 23.71s/it]
 Avg latency: 23.70484172180295 seconds
 ```
+
+
+
+
+
+
+
+
 
 
