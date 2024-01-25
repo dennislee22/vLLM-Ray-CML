@@ -22,7 +22,7 @@
 
 - Fitting a huge LLM into a single GPU with limited VRAM during LLM inference is often met with OOM error. Hosting a model with billions of parameters requires thorough understanding of the available ML framework techniques to load the model into the GPU without sacrificing the model precision and output.
 - As GPU prices grow exponentially with their size, so chances are companies are more likely to be able to afford multiple smaller GPU devices than a single gigantic one. Data scientists should explore ways to saturate GPU utilization, both VRAM and CUDA/Tensor cores in order to speed up the model inference process.
-- While inferencing a model with 7 billion parameters is be able to fit into a single GPU device with 40GB of memory, model with 30 billion parameters needs to involve Tensor Parallelism (TP) to partition the model weights into the VRAM of all the available GPU devices across multiple nodes. This requires a scalable infrastructure platform.
+- While inferencing a model with 7 billion parameters is be able to fit into a single GPU device with 40GB of memory, model with 30 billion parameters needs to leverage on `Tensor Parallelism (TP)` to partition the model weights into the VRAM of all the available GPU devices across multiple nodes. This requires a scalable infrastructure platform.
 - This article illustrates simple steps to design a distributed LLM inference solution on a scalable platform with CML (Cloudera Machine Learning) on a Kubernetes platform (Openshift/Rancher).
 
 ### <a name="toc_1"></a>2. Design Factors
@@ -34,12 +34,15 @@
 - vLLM stores KV cache in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser amount with the constrained GPU memory.<br>
 <img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296"><br>
 - In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffics from external network and traverse the traffics to the vLLM server running as a different pod. vLLM, by default, use Ray technology that is able to scale out the worker pods. Using Ray with CML distributed API is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topics.
+- vLLM can also spin up [OpenAI-Compatible Server](https://docs.vllm.ai/en/latest/getting_started/quickstart.html) to serve model inference using OpenAI API protocol.
 - All worker nodes should ideally be using the same NFS storage to share common files, libraries, codes and model artifacts.
 
 ### <a name="toc_2"></a>3. Deployment Steps
 
-
-
+- Only 2 Python scripts are required to setup the distributed LLM inference solution.
+- [ray_dashboard_4pods.py](ray_dashboard_4pods.py) script is crafted to start the Ray service and appoint the pod as the head. Ray dashboard is also included. vLLM engine will also be initiated in the same pod and it will communicate with Ray head (port 6379) automatically behind the scene. OPENAI compatible server is also started in the same vLLM pod for serving model inference using OpenAI API protocol. Note that 4 worker pods with GPU are configured in this script and you may change the value accordingly.
+- [reverse-proxy.py](reverse-proxy.py) script is designed to use Flask as the proxy server. External clients will connect to this frontend and Flask will relay the incoming request to the vLLM pod as the `backend server`.
+  
 #### <a name="toc_3"></a>3.1 Create CML Session
 
 - Create a new CML project with Python 3.10 and GPU variant.
@@ -70,6 +73,9 @@ pip install -U protobuf flask markupsafe jinja2
 git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 ```
 
+- Prepare the scripts in the editor.
+<img width="800" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/11578915-b958-4d61-9dd9-24f7f7f3d9af">
+
 #### <a name="toc_4"></a>3.2 Create Ray (Dashboard+Head) as Application
 
 - Create the Ray Dashboard and Head (as the CML application).
@@ -77,27 +83,8 @@ git-lfs clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 <img width="485" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/7fbec7af-c1bd-4af5-bc70-435fb0b12220">
 
 - Upon successful creation, browse the Ray Dashboard URL.
-
   
 - Verify the status of Ray.
-
-
-
-#### <a name="toc_5"></a>3.3 Create Flask (Reverse Proxy) as Application
-
-- Create a reverse-proxy server (as the CML application) to serve the incoming traffics from the external network.
-<img width="476" alt="image" src="https://github.com/dennislee22/deepspeed-train-CML/assets/35444414/f7a42bef-9c1e-4910-a68b-b9b9961ba831">
-
-
-
-### <a name="toc_7"></a>4. 
-
-
-
-<img width="1328" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/11578915-b958-4d61-9dd9-24f7f7f3d9af">
-
-
-python -m vllm.entrypoints.openai.api_server --tensor-parallel-size=1 --served-model-name="vicuna-13b-v1.3" --model="vicuna-13b-v1.3" --port=8090 --host="0.0.0.0" > output.log 2>&1 &
 
 ```
 cdsw@m4u3p7qm2255m2by:~$ ray status --address 10.254.19.61:6379
@@ -127,6 +114,23 @@ Demands:
 ```
 
 
+#### <a name="toc_5"></a>3.3 Create Flask (Reverse Proxy) as Application
+
+- Create a reverse-proxy server (as the CML application) to serve the incoming traffics from the external network.
+- In total, 2 CML applications (Flask and Ray Dashboard) should be up and running as shown below.
+
+<img width="800" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/58bcf80d-f549-4ec2-ac0f-364e7f38cf38">
+
+### <a name="toc_6"></a>4. Testing Result
+
+- Create a reverse-proxy server (as the CML application) 
+
+
+
+python -m vllm.entrypoints.openai.api_server --tensor-parallel-size=1 --served-model-name="vicuna-13b-v1.3" --model="vicuna-13b-v1.3" --port=8090 --host="0.0.0.0" > output.log 2>&1 &
+
+
+
 ```
 $ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.com/v1/completions -H "Content-Type: application/json" -d '{
 "model": "vicuna-13b-v1.3",
@@ -138,21 +142,20 @@ $ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.c
 ```
 - CML applications:
 
-<img width="1414" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/58bcf80d-f549-4ec2-ac0f-364e7f38cf38">
 
 
 
-<img width="985" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/01364d62-d27f-4d94-ae13-e65e375ef1e8">
+<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/01364d62-d27f-4d94-ae13-e65e375ef1e8">
 
-<img width="980" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/22203782-3652-4c09-937a-34dffef60bf2">
+<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/22203782-3652-4c09-937a-34dffef60bf2">
 
-<img width="985" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/b83f7aa6-9719-40d2-8602-8ad20f55a274">
+<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/b83f7aa6-9719-40d2-8602-8ad20f55a274">
 
-<img width="981" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/f6c1c0b8-1a9a-4558-a646-f0725a22f447">
+<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/f6c1c0b8-1a9a-4558-a646-f0725a22f447">
 
-<img width="985" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/ccde5e5a-7830-4cef-a04f-978b6cfbe063">
+<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/ccde5e5a-7830-4cef-a04f-978b6cfbe063">
 
-<img width="981" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/a70759a3-730b-477f-aa40-6c30b60ca04f">
+<img width="600" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/a70759a3-730b-477f-aa40-6c30b60ca04f">
 
 
 ```
