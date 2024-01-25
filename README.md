@@ -1,4 +1,4 @@
-# vLLM with Ray on CML
+a# vLLM with Ray on CML
 
 <img width="814" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/6a03d5bb-570c-44d8-8bad-55269905962c">
 
@@ -34,7 +34,7 @@
 - Select a universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM matches both criteria and it also supports continuous batching ([PagedAttention](https://arxiv.org/abs/2309.06180)) that helps to saturate GPU resources.
 - vLLM stores KV cache (gpu-memory-utilization setting) in the GPU memory up to 0.9 (90% of the total capacity). You may allocate lesser percentage with the constrained GPU memory.<br>
 <img width="400" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/5e0d84a6-5d51-4052-b3a2-e60b02378296"><br>
-- In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffic from external network and traverse the traffic to the vLLM server running as a different pod. vLLM, by default, uses [Ray](https://github.com/ray-project/ray) technology that can scale out the worker pods. Using Ray with CML distributed API is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topic.
+- In this architecture, a reverse-proxy service (powered by Flask) is positioned to serve the incoming traffic from external network and traverse the traffic to the vLLM server running as a different pod. vLLM, by default, uses [Ray](https://github.com/ray-project/ray) technology that can scale out the worker pods. Using Ray with CML distributed mechanism is a perfect combo to deliver the scaling capability to AI/ML practitioners. Please check out the simple wrapper scripts in the subsequent topic.
 - vLLM can also spin up [OpenAI-Compatible Server](https://docs.vllm.ai/en/latest/getting_started/quickstart.html) to serve model inference using OpenAI API protocol.
 - All worker nodes should ideally be using the same NFS storage to share common files, libraries, codes, and model artifacts.
 
