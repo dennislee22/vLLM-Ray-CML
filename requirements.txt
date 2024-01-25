@@ -1,0 +1,3 @@
+vllm
+nvitop
+pip install ray[default]
