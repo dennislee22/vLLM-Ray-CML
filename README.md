@@ -129,7 +129,7 @@ Demands:
 
 #### <a name="toc_5"></a>3.3 Create Flask (Reverse Proxy) as Application
 
-- Start a reverse-proxy services as the CML application for serving the incoming API inference request traffic from the external network.
+- Start a reverse-proxy service as the CML application for serving the incoming API inference request traffic from the external network.
 - In total, 2 CML applications (Flask and Ray Dashboard) should be up and running as shown below.
 
 <img width="800" alt="image" src="https://github.com/dennislee22/vLLM-rayServe/assets/35444414/58bcf80d-f549-4ec2-ac0f-364e7f38cf38">
