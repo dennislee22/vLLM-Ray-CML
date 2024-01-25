@@ -152,6 +152,7 @@ $ curl https://vllm-api.ml-b5e2c5e4-d7f.apps.field-team-ocp-01.kcloud.cloudera.c
 
 #### <a name="toc_8"></a>5.1 tensor-parallel-size=1
 
+- Edit the [ray_dashboard_4pods.py](ray_dashboard_4pods.py) file and configure `tensor-parallel-size=1`. Restart Ray-dashboard application in CML.
 - Run the load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey).
 
 ```
@@ -214,6 +215,7 @@ INFO 01-24 10:56:14 llm_engine.py:706] Avg prompt throughput: 0.0 tokens/s, Avg 
 
 #### <a name="toc_9"></a>5.2 tensor-parallel-size=4
 
+- Edit the [ray_dashboard_4pods.py](ray_dashboard_4pods.py) file and configure `tensor-parallel-size=4`. Restart Ray-dashboard application in CML.
 - Run the load test pointing to the reverse-proxy URL with OPENAI compatible API request using [Hey](https://github.com/rakyll/hey).
 
 ```
@@ -271,12 +273,12 @@ Status code distribution:
 ### <a name="toc_10"></a>6. More Experiments
 
 - Check out the following offline inference results that were carried out using [vLLM benchmark throughput](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_throughput.py) and [vLLM benchmark latency](https://github.com/vllm-project/vllm/blob/main/benchmarks/benchmark_latency.py) scripts. The following test cases were done using the `open_llama_13b` model.
-
-```
-!python benchmark_throughput.py --backend vllm --dataset ./ShareGPT_V3_unfiltered_cleaned_split.json --model open_llama_13b  --num-prompts=100
-```
+- Adjust the scripts with the respective value of `tensor-parallel-size` for each of the following tests.
 ```
 !python benchmark_latency.py --tensor-parallel-size 1 --model vicuna-13b-v1.3  --n 10
+```
+```
+!python benchmark_throughput.py --backend vllm --dataset ./ShareGPT_V3_unfiltered_cleaned_split.json --model open_llama_13b  --num-prompts=100
 ```
 
 #### <a name="toc_11"></a>6.1 tensor-parallel-size=1
