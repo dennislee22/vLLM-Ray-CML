@@ -28,7 +28,7 @@
 
 ### <a name="toc_1"></a>2. Design Factors
 
-- Deliver the benefits of Kubernetes to data scientists and yet, shield the complexities of K8s away from them by using SOTA application management or wrapper tool, ie. the ability to spawn multiple worker pods in parallel by utilizing user-friendly dashboard without having to write K8s yaml files. 
+- Deliver the benefits of Kubernetes to data scientists and yet, shield the complexities of K8s away from them by using SOTA application management or wrapper tool, ie. the ability to spawn multiple worker pods in parallel without having to write K8s YAML scripts.
 - Using a single GPU for a small model inference is likely to achieve low latency but not necessarily high throughput (requests/sec).
 - Using multiple nodes with GPU with the help of TP would achieve high throughput but at the expense of low latency. Communications among the TP workers might require high-performance network gadgets to overcome network bottlenecks.
 - Select a universally accepted LLM inference and serving engine/framework that supports various types of 🤗 models, e.g. [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). It must also support TP, should large model be involved with low specs GPUs. vLLM matches both criteria and it also supports continuous batching ([PagedAttention](https://arxiv.org/abs/2309.06180)) that helps to saturate GPU resources.
