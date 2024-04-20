@@ -1,3 +1,4 @@
 vllm
 nvitop
 ray[default]
+waitress
