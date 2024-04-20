@@ -6,7 +6,7 @@ with open("RAY_HEAD_IP") as fp:
     RAY_HEAD_IP=fp.read()
 
 app = Flask(__name__)
-SITE_NAME = f'http://{RAY_HEAD_IP}:5000/'
+SITE_NAME = f'http://{RAY_HEAD_IP}:9000/'
 
 @app.route('/')
 def index():
