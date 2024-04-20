@@ -1,12 +1,14 @@
 from flask import Flask,request,redirect,Response
 import requests, os
-#RAY_HEAD_IP=os.environ['RAY_HEAD_IP']
+RAY_HEAD_IP=os.environ['RAY_HEAD_IP']
+CDSW_APP_PORT=os.environ['CDSW_APP_PORT'] 
 
+RAY_PORT=9000
 with open("RAY_HEAD_IP") as fp:
     RAY_HEAD_IP=fp.read()
 
 app = Flask(__name__)
-SITE_NAME = f'http://{RAY_HEAD_IP}:9000/'
+SITE_NAME = f'http://{RAY_HEAD_IP}:{RAY_PORT}/'
 
 @app.route('/')
 def index():
@@ -32,5 +34,5 @@ def proxy(path):
         return response
 if __name__ == '__main__':
     from waitress import serve
-    serve(app, host="127.0.0.1", port=8100)
+    serve(app, host="127.0.0.1", port=CDSW_APP_PORT) #8100
     #app.run(debug = False,port=8100)
