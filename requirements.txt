@@ -4,3 +4,4 @@ ray[default]
 waitress
 accelerate
 ipywidgets
+pynvml
