@@ -2,3 +2,5 @@ vllm
 nvitop
 ray[default]
 waitress
+accelerate
+ipywidgets
